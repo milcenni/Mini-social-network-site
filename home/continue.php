@@ -1,6 +1,7 @@
 <?php 
 session_start();
-if(count($_POST['seem'])>0) {
+if(isset($_POST['seem']))
+{
 	$counter = 0;
 	$countid = $_SESSION['count'];
 	while($counter < 5) {

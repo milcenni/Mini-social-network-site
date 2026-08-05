@@ -6,6 +6,26 @@ tapi nasib deme le..dah default 100%
 */
 session_start();
 require("../f-pages/security/security-2/database/db.php");
+//fetch news from public API with a 30-minute cache (no API key required)
+$newsCache = "news_cache.json";
+$news = array();
+if(file_exists($newsCache) && (time() - filemtime($newsCache) < 1800)) {
+	$news = json_decode(file_get_contents($newsCache), true);
+}
+if(empty($news)) {
+	$topIds = @file_get_contents("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty");
+	if($topIds) {
+		$ids = array_slice(json_decode($topIds, true), 0, 6);
+		foreach($ids as $id) {
+			$item = @file_get_contents("https://hacker-news.firebaseio.com/v0/item/" . $id . ".json?print=pretty");
+			$arr = json_decode($item, true);
+			if(is_array($arr) && !empty($arr['title'])) {
+				$news[] = array('title' => $arr['title'], 'url' => (isset($arr['url']) ? $arr['url'] : "https://news.ycombinator.com/item?id=" . $id));
+			}
+		}
+		file_put_contents($newsCache, json_encode($news));
+	}
+}
 //check
 if(!(isset($_SESSION['user']))){
 	header("location:../");
@@ -16,7 +36,7 @@ error_reporting(0);
 $sql = "SELECT * FROM user_info WHERE username='" . $_SESSION['username'] . "'";
 $result = mysqli_query($con, $sql);
 $row = mysqli_fetch_array($result);
-if(count($_POST['post-status'])>0)
+if(isset($_POST['post-status']))
 {
 	//set limit text posted 90 char je status
 	$getstatus = $_POST['status'];
@@ -232,6 +252,15 @@ if(count($_POST['post-status'])>0)
 	border : none;
 	border-radius : 25px;
 }
+.navsidead {
+	position : sticky;
+	top : calc(100px + 30% + 15px);
+	width : 100%;
+	background-color : white;
+	border : 2px solid #e6e6e6;
+	border-radius : 25px;
+	box-shadow : 2px 2px 10px grey;
+}
 .navsideabsolute {
 	top : 400px;
 	left : 65%;
@@ -296,12 +325,31 @@ if(count($_POST['post-status'])>0)
 
 <div class="navsideabsolute">
 <div class="navstickyside">
-<br>
-//tak tahu nak letak kat sini apa..
-<br>
-//soon will be updated!
-<br><br>
-//DEM SON
+<div style="padding : 15px; text-align : left; font-family : Garamond, serif;">
+<p style="font-size : 22px; margin : 0 0 10px 0; color : black;">LATEST NEWS</p>
+<hr>
+<ul style="font-size : 15px; color : grey; list-style : none; padding : 0; line-height : 1.8;">
+<?php
+if(count($news) > 0) {
+	foreach($news as $n) {
+		echo "<li><a href='" . $n['url'] . "' target='_blank' style='color : grey; text-decoration : none;'>" . htmlspecialchars($n['title']) . "</a></li><hr style='border : none; border-top : 1px solid #e6e6e6;'>";
+	}
+} else {
+	echo "<li>News unavailable right now.</li>";
+}
+?>
+</ul>
+</div>
+</div>
+<div class="navsidead">
+<div style="padding : 15px; text-align : center; font-family : Garamond, serif;">
+<p style="font-size : 18px; margin : 0 0 10px 0; color : black;">ADVERTISEMENT</p>
+<hr>
+<p style="font-size : 14px; color : grey;">Your ad here!<br>Contact us to advertise.</p>
+<a href="https://www.youtube.com/@MJStudio" target="_blank">
+<img src="../sources/img/blog.png" style="width : 100px; height : 100px; border-radius : 50%;">
+</a>
+</div>
 </div>
 </div>
 
